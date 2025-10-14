@@ -1,5 +1,6 @@
 ## 13.2.1
-No changes - Now the [Health](https://pub.dev/packages/health) package lives in its own repository
+
+No changes - Now the [Health](https://pub.dev/packages/health) package lives in its own repository at [https://github.com/carp-dk/carp-health-flutter](https://github.com/carp-dk/carp-health-flutter)
 
 ## 13.2.0
 
