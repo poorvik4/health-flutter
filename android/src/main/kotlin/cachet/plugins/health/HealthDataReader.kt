@@ -310,7 +310,7 @@ class HealthDataReader(
                     )
                 )
 
-                val distanceDelta = response[DistanceRecord.DISTANCE_TOTAL] ?: 0L
+                val distanceDelta = response[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0L
                 Log.i("HealthConnect", "Total distance delta: ${distanceDelta}m")
                 result.success(distanceDelta)
 
