@@ -3,6 +3,7 @@ package cachet.plugins.health
 import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.HealthConnectFeatures
+import androidx.health.connect.client.feature.ExperimentalFeatureAvailabilityApi
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.permission.HealthPermission.Companion.PERMISSION_READ_HEALTH_DATA_HISTORY
 import androidx.health.connect.client.permission.HealthPermission.Companion.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
@@ -18,10 +19,10 @@ import kotlinx.coroutines.launch
  * operations. Manages the administrative aspects of Health Connect integration.
  */
 class HealthDataOperations(
-        private val healthConnectClient: HealthConnectClient,
-        private val scope: CoroutineScope,
-        private val healthConnectStatus: Int,
-        private val healthConnectAvailable: Boolean
+    private val healthConnectClient: HealthConnectClient,
+    private val scope: CoroutineScope,
+    private val healthConnectStatus: Int,
+    private val healthConnectAvailable: Boolean
 ) {
 
     /**
@@ -55,10 +56,10 @@ class HealthDataOperations(
 
         scope.launch {
             result.success(
-                    healthConnectClient
-                            .permissionController
-                            .getGrantedPermissions()
-                            .containsAll(permList),
+                healthConnectClient
+                    .permissionController
+                    .getGrantedPermissions()
+                    .containsAll(permList),
             )
         }
     }
@@ -102,12 +103,13 @@ class HealthDataOperations(
      * @param call Method call from Flutter (unused)
      * @param result Flutter result callback returning boolean availability status
      */
+    @OptIn(ExperimentalFeatureAvailabilityApi::class)
     fun isHealthDataHistoryAvailable(call: MethodCall, result: Result) {
         scope.launch {
             result.success(
-                    healthConnectClient.features.getFeatureStatus(
-                            HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_HISTORY
-                    ) == HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
+                healthConnectClient.features.getFeatureStatus(
+                    HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_HISTORY
+                ) == HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
             )
         }
     }
@@ -122,10 +124,10 @@ class HealthDataOperations(
     fun isHealthDataHistoryAuthorized(call: MethodCall, result: Result) {
         scope.launch {
             result.success(
-                    healthConnectClient
-                            .permissionController
-                            .getGrantedPermissions()
-                            .containsAll(listOf(PERMISSION_READ_HEALTH_DATA_HISTORY)),
+                healthConnectClient
+                    .permissionController
+                    .getGrantedPermissions()
+                    .containsAll(listOf(PERMISSION_READ_HEALTH_DATA_HISTORY)),
             )
         }
     }
@@ -137,12 +139,13 @@ class HealthDataOperations(
      * @param call Method call from Flutter (unused)
      * @param result Flutter result callback returning boolean availability status
      */
+    @OptIn(ExperimentalFeatureAvailabilityApi::class)
     fun isHealthDataInBackgroundAvailable(call: MethodCall, result: Result) {
         scope.launch {
             result.success(
-                    healthConnectClient.features.getFeatureStatus(
-                            HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_IN_BACKGROUND
-                    ) == HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
+                healthConnectClient.features.getFeatureStatus(
+                    HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_IN_BACKGROUND
+                ) == HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
             )
         }
     }
@@ -157,10 +160,10 @@ class HealthDataOperations(
     fun isHealthDataInBackgroundAuthorized(call: MethodCall, result: Result) {
         scope.launch {
             result.success(
-                    healthConnectClient
-                            .permissionController
-                            .getGrantedPermissions()
-                            .containsAll(listOf(PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND)),
+                healthConnectClient
+                    .permissionController
+                    .getGrantedPermissions()
+                    .containsAll(listOf(PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND)),
             )
         }
     }
@@ -188,13 +191,13 @@ class HealthDataOperations(
         scope.launch {
             try {
                 healthConnectClient.deleteRecords(
-                        recordType = classType,
-                        timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+                    recordType = classType,
+                    timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
                 )
                 result.success(true)
                 Log.i(
-                        "FLUTTER_HEALTH::SUCCESS",
-                        "Successfully deleted $type records between $startTime and $endTime"
+                    "FLUTTER_HEALTH::SUCCESS",
+                    "Successfully deleted $type records between $startTime and $endTime"
                 )
             } catch (e: Exception) {
                 Log.e("FLUTTER_HEALTH::ERROR", "Error deleting $type records: ${e.message}")
@@ -226,56 +229,17 @@ class HealthDataOperations(
         scope.launch {
             try {
                 healthConnectClient.deleteRecords(
-                        recordType = classType,
-                        recordIdsList = listOf(uuid),
-                        clientRecordIdsList = emptyList()
+                    recordType = classType,
+                    recordIdsList = listOf(uuid),
+                    clientRecordIdsList = emptyList()
                 )
                 result.success(true)
                 Log.i(
-                        "FLUTTER_HEALTH::SUCCESS",
-                        "[Health Connect] Record with UUID $uuid was successfully deleted!"
+                    "FLUTTER_HEALTH::SUCCESS",
+                    "[Health Connect] Record with UUID $uuid was successfully deleted!"
                 )
             } catch (e: Exception) {
                 Log.e("FLUTTER_HEALTH::ERROR", "Error deleting record with UUID: $uuid")
-                Log.e("FLUTTER_HEALTH::ERROR", e.message ?: "unknown error")
-                Log.e("FLUTTER_HEALTH::ERROR", e.stackTraceToString())
-                result.success(false)
-            }
-        }
-    }
-
-    /**
-     * Deletes a specific health record by its client record ID and data type. Allows precise
-     * deletion of individual health records using client-side IDs.
-     *
-     * @param call Method call containing 'dataTypeKey', 'recordId', and 'clientRecordId'
-     * @param result Flutter result callback returning boolean success status
-     */
-    fun deleteByClientRecordId(call: MethodCall, result: Result) {
-        val arguments = call.arguments as? HashMap<*, *>
-        val dataTypeKey = (arguments?.get("dataTypeKey") as? String)!!
-        val recordId = listOfNotNull(arguments["recordId"] as? String)
-        val clientRecordId = listOfNotNull(arguments["clientRecordId"] as? String)
-        if (!HealthConstants.mapToType.containsKey(dataTypeKey)) {
-            Log.w("FLUTTER_HEALTH::ERROR", "Datatype $dataTypeKey not found in HC")
-            result.success(false)
-            return
-        }
-        val classType = HealthConstants.mapToType[dataTypeKey]!!
-
-        scope.launch {
-            try {
-                healthConnectClient.deleteRecords(
-                        classType,
-                        recordId,
-                        clientRecordId
-                )
-                result.success(true)
-            } catch (e: Exception) {
-                Log.e(
-                        "FLUTTER_HEALTH::ERROR",
-                        "Error deleting record with ClientRecordId: $clientRecordId"
-                )
                 Log.e("FLUTTER_HEALTH::ERROR", e.message ?: "unknown error")
                 Log.e("FLUTTER_HEALTH::ERROR", e.stackTraceToString())
                 result.success(false)
@@ -292,8 +256,8 @@ class HealthDataOperations(
      * @return List<String>? Formatted permission strings, or null if invalid input
      */
     private fun preparePermissionsListInternal(
-            types: List<String>,
-            permissions: List<Int>
+        types: List<String>,
+        permissions: List<Int>
     ): List<String>? {
         val permList = mutableListOf<String>()
 
@@ -309,20 +273,20 @@ class HealthDataOperations(
             if (access == 0) {
                 // Read permission only
                 permList.add(
-                        HealthPermission.getReadPermission(dataType),
+                    HealthPermission.getReadPermission(dataType),
                 )
             } else if (access == 1) {
                 // Write permission only
                 permList.add(
-                        HealthPermission.getWritePermission(dataType),
+                    HealthPermission.getWritePermission(dataType),
                 )
             } else {
                 // Read and write permissions
                 permList.addAll(
-                        listOf(
-                                HealthPermission.getReadPermission(dataType),
-                                HealthPermission.getWritePermission(dataType),
-                        ),
+                    listOf(
+                        HealthPermission.getReadPermission(dataType),
+                        HealthPermission.getWritePermission(dataType),
+                    ),
                 )
             }
         }
