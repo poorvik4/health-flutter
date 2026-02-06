@@ -315,7 +315,7 @@ class HealthDataReader(
                         metrics = setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL),
                         timeRangeFilter = TimeRangeFilter.between(startInstant, endInstant)
                     )
-                ).first()  // Collect the first (and typically only) result from the Flow
+                )  // Collect the first (and typically only) result from the Flow
     
                 val energyDeltaKilocalories = response[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories ?: 0L
                 Log.i("HealthConnect", "Total energy delta: ${energyDeltaKilocalories}cal")
